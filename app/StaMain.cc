@@ -81,14 +81,14 @@ staMain(Sta *sta,
   load_history();
 
   while((!ended) && (buffer = readline("OpenSTA> ")) != NULL) {
-      status = Tcl_Eval(myInterp, buffer);
-      if(status != TCL_OK) {
-          fprintf(stderr, "%s\n", Tcl_GetStringResult(myInterp));
-      }
-      if (buffer[0] != 0)
-          add_history(buffer);
-      free(buffer);
-      if(ended) break;
+    status = Tcl_Eval(myInterp, buffer);
+    if(status != TCL_OK) {
+      fprintf(stderr, "%s\n", Tcl_GetStringResult(myInterp));
+    }
+    if (buffer[0] != 0)
+      add_history(buffer);
+    free(buffer);
+    if(ended) break;
   }
 
   save_history();
@@ -318,7 +318,7 @@ void load_history()
     while((read = getline(&line, &len, histin)) != -1) {
       line[strlen(line)-1] = 0;
       if (line[0] != 0) {
-          add_history(line);
+        add_history(line);
       }
     }
     fclose(histin);
@@ -331,11 +331,11 @@ void save_history()
   HIST_ENTRY **the_list;
   the_list = history_list();
   if(the_list){
-      FILE *histout = fopen(".history_sta", "w");
-      for(int i=0; the_list[i] ; i++) {
-        fprintf(histout, "%s\n", the_list[i]->line);
-      }
-      fclose(histout);
+    FILE *histout = fopen(".history_sta", "w");
+    for(int i=0; the_list[i] ; i++) {
+      fprintf(histout, "%s\n", the_list[i]->line);
+    }
+    fclose(histout);
   }
 }
 
