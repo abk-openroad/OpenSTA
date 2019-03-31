@@ -18,6 +18,8 @@ cmake_minimum_required (VERSION 3.9)
 
 project(STA VERSION 2.0.12)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules CACHE STRING "CMake module path")
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -548,6 +550,7 @@ get_filename_component(TCL_HEADER_DIR "${TCL_HEADER}" PATH)
 
 find_package(FLEX)
 find_package(BISON)
+find_package(Readline REQUIRED)
 
 # LibertyExpr scan/parse.
 bison_target(LibertyExprParser liberty/LibertyExprParse.yy ${STA_HOME}/liberty/LibertyExprParse.cc
@@ -690,6 +693,8 @@ target_link_libraries(sta
 if (ZLIB_FOUND)
   target_link_libraries(sta ${ZLIB_LIBRARIES})
 endif()
+
+target_link_libraries(sta ${Readline_LIBRARY})
 
 message(STATUS "STA executable: ${STA_HOME}/app/sta")
 
