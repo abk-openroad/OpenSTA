@@ -31,6 +31,8 @@ typedef sta::Vector<SwigInitFunc> SwigInitFuncSeq;
 char **extra_command_completion (const char *, int, int);
 char *extra_command_generator (const char *, int);
 int command_exit (ClientData, Tcl_Interp *, int, Tcl_Obj *const []);
+void save_history();
+void load_history();
 
 // "Arguments" passed to staTclAppInit.
 static int sta_argc;
@@ -76,6 +78,8 @@ staMain(Sta *sta,
 
   staTclAppInit(myInterp);
 
+  load_history();
+
   while((!ended) && (buffer = readline("OpenSTA> ")) != NULL) {
       status = Tcl_Eval(myInterp, buffer);
       if(status != TCL_OK) {
@@ -86,6 +90,8 @@ staMain(Sta *sta,
       free(buffer);
       if(ended) break;
   }
+
+  save_history();
 
   Tcl_DeleteInterp(myInterp);
   Tcl_Finalize();
@@ -301,6 +307,38 @@ char *extra_command_generator(const char *text, int state)
 
   return NULL;
 }
+
+void load_history()
+{
+  FILE *histin = fopen(".history_sta", "r");
+  if(histin != NULL) {
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    while((read = getline(&line, &len, histin)) != -1) {
+      line[strlen(line)-1] = 0;
+      if (line[0] != 0) {
+          add_history(line);
+      }
+    }
+    fclose(histin);
+  }
+}
+
+void save_history()
+{
+  printf("Saving command history\n");
+  HIST_ENTRY **the_list;
+  the_list = history_list();
+  if(the_list){
+      FILE *histout = fopen(".history_sta", "w");
+      for(int i=0; the_list[i] ; i++) {
+        fprintf(histout, "%s\n", the_list[i]->line);
+      }
+      fclose(histout);
+  }
+}
+
 
 void
 showUseage(char *prog)
