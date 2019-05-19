@@ -16,6 +16,8 @@
 
 #include <tcl.h>
 #include <stdlib.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "Machine.hh"
 #include "StringUtil.hh"
 #include "Vector.hh"
@@ -25,6 +27,12 @@
 namespace sta {
 
 typedef sta::Vector<SwigInitFunc> SwigInitFuncSeq;
+
+char **extra_command_completion (const char *, int, int);
+char *extra_command_generator (const char *, int);
+int command_exit (ClientData, Tcl_Interp *, int, Tcl_Obj *const []);
+void save_history();
+void load_history();
 
 // "Arguments" passed to staTclAppInit.
 static int sta_argc;
@@ -38,12 +46,18 @@ static void
 sourceTclFileEchoVerbose(const char *filename,
 			 Tcl_Interp *interp);
 
+static bool ended = 0;
+
 void
 staMain(Sta *sta,
 	int argc,
 	char **argv,
 	SwigInitFunc swig_init)
 {
+  char *buffer;
+  Tcl_Interp *myInterp;
+  int status;
+
   initSta();
 
   Sta::setSta(sta);
@@ -56,9 +70,31 @@ staMain(Sta *sta,
     sta->setThreadCount(thread_count);
 
   staSetupAppInit(argc, argv, swig_init);
-  // Set argc to 1 so Tcl_Main doesn't source any files.
-  // Tcl_Main never returns.
-  Tcl_Main(1, argv, staTclAppInit);
+
+  myInterp = Tcl_CreateInterp();
+  Tcl_CreateObjCommand(myInterp, "exit", (Tcl_ObjCmdProc*)command_exit, 0, 0);
+
+  rl_attempted_completion_function = extra_command_completion;
+
+  staTclAppInit(myInterp);
+
+  load_history();
+
+  while((!ended) && (buffer = readline("OpenSTA> ")) != NULL) {
+    status = Tcl_Eval(myInterp, buffer);
+    if(status != TCL_OK) {
+      fprintf(stderr, "%s\n", Tcl_GetStringResult(myInterp));
+    }
+    if (buffer[0] != 0)
+      add_history(buffer);
+    free(buffer);
+    if(ended) break;
+  }
+
+  save_history();
+
+  Tcl_DeleteInterp(myInterp);
+  Tcl_Finalize();
 }
 
 void
@@ -202,6 +238,106 @@ evalTclInit(Tcl_Interp *interp,
   }
   delete [] unencoded;
 }
+
+int command_exit(ClientData, Tcl_Interp *, int, Tcl_Obj *const [])
+{
+  ended = 1;
+  return 0;
+}
+
+char const *extra_commands[] = {
+    "all_clocks",
+    "all_inputs",
+    "all_outputs",
+    "all_registers",
+    "check_setup",
+    "create_clock",
+    "create_generated_clock",
+    "create_voltage_area",
+    "current_design",
+    "current_instance",
+    "define_corners",
+
+    "get_clocks",
+    "get_fanin",
+    "get_fanout",
+
+    "get_nets",
+    "get_pins",
+    "get_ports",
+    "read_liberty",
+    "read_parasitics",
+    "read_sdc",
+    "read_sdf",
+    "read_spef",
+    "read_verilog",
+    "report_annotated_delay",
+    "report_cell",
+    "report_checks",
+    "report_path",
+    "report_slack",
+    "set_input_delay",
+    "write_sdc",
+    "write_sdf",
+    NULL
+};
+
+char **extra_command_completion(const char *text, int, int)
+{
+  rl_attempted_completion_over = 0;
+  return rl_completion_matches(text, extra_command_generator);
+}
+
+char *extra_command_generator(const char *text, int state)
+{
+  static int list_index, len;
+  const char *name;
+
+  if (!state) {
+    list_index = 0;
+    len = strlen(text);
+  }
+
+  while ((name = extra_commands[list_index++])) {
+    if(strncmp(name, text, len) == 0) {
+      return strdup(name);
+    }
+  }
+
+  return NULL;
+}
+
+void load_history()
+{
+  FILE *histin = fopen(".history_sta", "r");
+  if(histin != NULL) {
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    while((read = getline(&line, &len, histin)) != -1) {
+      line[strlen(line)-1] = 0;
+      if (line[0] != 0) {
+        add_history(line);
+      }
+    }
+    fclose(histin);
+  }
+}
+
+void save_history()
+{
+  printf("Saving command history\n");
+  HIST_ENTRY **the_list;
+  the_list = history_list();
+  if(the_list){
+    FILE *histout = fopen(".history_sta", "w");
+    for(int i=0; the_list[i] ; i++) {
+      fprintf(histout, "%s\n", the_list[i]->line);
+    }
+    fclose(histout);
+  }
+}
+
 
 void
 showUseage(char *prog)
