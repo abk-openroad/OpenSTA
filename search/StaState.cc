@@ -20,6 +20,8 @@
 #include "DispatchQueue.hh"
 #include "StaState.hh"
 
+#include "galois/Galois.h"
+
 namespace sta {
 
 StaState::StaState() :
@@ -42,6 +44,7 @@ StaState::StaState() :
   pocv_enabled_(false),
   sigma_factor_(1.0)
 {
+  galois::setActiveThreads(thread_count_);
 }
 
 StaState::StaState(const StaState *sta) :

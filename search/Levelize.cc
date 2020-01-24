@@ -38,7 +38,7 @@ Levelize::Levelize(StaState *sta) :
   levelized_(false),
   levels_valid_(false),
   max_level_(0),
-  level_space_(10),
+  level_space_(1),
   loops_(nullptr),
   observer_(nullptr)
 {

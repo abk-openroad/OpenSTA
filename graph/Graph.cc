@@ -1040,6 +1040,10 @@ Vertex::init(Pin *pin,
   bfs_in_queue_ = 0;
   crpr_path_pruning_disabled_ = false;
   requireds_pruned_ = false;
+  bfs_in_queue_atomic_[BfsIndex::dcalc] = 0;
+  bfs_in_queue_atomic_[BfsIndex::arrival] = 0;
+  bfs_in_queue_atomic_[BfsIndex::required] = 0;
+  bfs_in_queue_atomic_[BfsIndex::other] = 0;
 }
 
 void
@@ -1227,17 +1231,22 @@ Vertex::setHasDownstreamClkPin(bool has_clk_pin)
 bool
 Vertex::bfsInQueue(BfsIndex index) const
 {
-  return (bfs_in_queue_ >> unsigned(index)) & 1;
+  return bfs_in_queue_atomic_[index];
 }
 
-void
+bool
 Vertex::setBfsInQueue(BfsIndex index,
-		      bool value)
+                      bool value)
 {
-  if (value)
-    bfs_in_queue_ |= 1 << int(index);
-  else
-    bfs_in_queue_ &= ~(1 << int(index));
+  if (value) {
+    // use compare and swap to make sure only one enqueue is done
+    return __sync_bool_compare_and_swap(&bfs_in_queue_atomic_[index], 0, 1);
+  }
+  else {
+    // assume only one is enqueued, so plain store is enough
+    bfs_in_queue_atomic_[index] = 0;
+    return true;
+  }
 }
 
 ////////////////////////////////////////////////////////////////

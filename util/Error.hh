@@ -19,6 +19,7 @@
 
 #include <exception>
 #include "DisallowCopyAssign.hh"
+#include "Machine.hh"
 
 namespace sta {
 

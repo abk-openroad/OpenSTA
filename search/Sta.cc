@@ -71,6 +71,8 @@
 #include "Power.hh"
 #include "Sta.hh"
 
+#include "galois/Galois.h"
+
 namespace sta {
 
 using std::min;
@@ -323,6 +325,7 @@ Sta::setThreadCount(int thread_count)
   //  dispatch_queue_->setThreadCount(thread_count);
   delete dispatch_queue_;
   dispatch_queue_ = new DispatchQueue(thread_count);
+  galois::setActiveThreads(thread_count);
   updateComponentsState();
 }
 

@@ -316,7 +316,8 @@ public:
   bool isConstrained() const { return is_constrained_; }
   void setIsConstrained(bool constrained);
   bool bfsInQueue(BfsIndex index) const;
-  void setBfsInQueue(BfsIndex index, bool value);
+  // Returns true if successful.
+  bool setBfsInQueue(BfsIndex index, bool value);
   bool isRegClk() const { return is_reg_clk_; }
   bool crprPathPruningDisabled() const { return crpr_path_pruning_disabled_;}
   void setCrprPathPruningDisabled(bool disabled);
@@ -345,6 +346,9 @@ protected:
   // Each bit corresponds to a different BFS queue.
   unsigned int bfs_in_queue_:int(BfsIndex::bits); // 4
   unsigned int slew_annotated_:slew_annotated_bits;
+
+  // for doing bfs_in_queue_ w/ compare and swap
+  unsigned int bfs_in_queue_atomic_[BfsIndex::bits];
 
   // 4 bytes (32 bits)
   unsigned int level_:16;

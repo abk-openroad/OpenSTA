@@ -52,7 +52,7 @@ static const TagGroupIndex tag_group_index_max = (1<<tag_group_index_bits)-1;
 static const int slew_annotated_bits = MinMax::index_count * RiseFall::index_count;
 
 // Bit shifts used to mark vertices in a Bfs queue.
-enum class BfsIndex { dcalc, arrival, required, other, bits };
+enum BfsIndex { dcalc, arrival, required, other, bits };
 
 } // namespace
 #endif

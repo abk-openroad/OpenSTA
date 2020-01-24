@@ -22,6 +22,7 @@
 #include "Sta.hh"
 #include "StaMain.hh"
 
+#include "galois/Galois.h"
 
 namespace sta {
 extern const char *tcl_inits[];
@@ -60,6 +61,8 @@ static void
 initStaApp(int &argc,
 	   char *argv[],
 	   Tcl_Interp *interp);
+
+static galois::SharedMemSys G;
 
 int
 main(int argc,
