@@ -48,6 +48,7 @@ protected:
   void writePortDcls(Cell *cell);
   void writeWireDcls(Instance *inst);
   const char *verilogPortDir(PortDirection *dir);
+  void writeAssigns(Instance *inst);
   void writeChildren(Instance *inst);
   void writeChild(Instance *child);
   void writeInstPin(Instance *inst,
@@ -123,6 +124,7 @@ VerilogWriter::writeModule(Instance *inst)
   writeWireDcls(inst);
   fprintf(stream_, "\n");
   writeChildren(inst);
+  writeAssigns(inst);
   fprintf(stream_, "endmodule\n");
   written_cells_.insert(cell);
 
@@ -245,6 +247,40 @@ VerilogWriter::writeWireDcls(Instance *inst)
             range.second,
             netVerilogName(bus_name, network_->pathEscape()));;
   }
+}
+
+void
+VerilogWriter::writeAssigns(Instance *inst)
+{
+  // Write an assign statement for all targets that is a port whose name is
+  // different from the source.
+  // Assignments must be written after module instantiations so that all
+  // nets are implicitely declared.
+  // All nets are scalar, so we don't care about vectors.  Only ports can be
+  // declared as vectors but they are scalarized.
+  InstanceNetIterator *net_iter = network_->netIterator(inst);
+  while (net_iter->hasNext()) {
+    Net *net = net_iter->next();
+
+    unsigned nbr_terms = 0;
+    unsigned nbr_ports = 0;
+    NetTermIterator *term_iter = network_->termIterator(net);
+    while (term_iter->hasNext()) {
+      Term *term = term_iter->next();
+      Port *port = network_->port(network_->pin(term));
+      if (network_->direction(port) == PortDirection::output()
+	  && strcmp(network_->name(term), network_->name(net)) != 0) {
+	// Bus name is different from terminal name
+	fprintf(stream_, " assign %s = %s;\n",
+		netVerilogName(network_->name(port),
+			       network_->pathEscape()),
+		netVerilogName(network_->name(net),
+			       network_->pathEscape()));
+      }
+    }
+    delete term_iter;
+  }
+  delete net_iter;
 }
 
 void
